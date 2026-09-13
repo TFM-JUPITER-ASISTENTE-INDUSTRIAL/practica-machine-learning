@@ -13,6 +13,10 @@ def load_raw_data():
 def get_train_test_data():
     """ Carga, limpia y devuelve train y test"""
     df = load_raw_data()
+
+    # Eliminamos errores detectados en columna adr (negativos y valor de 5400€)
+    df = df[(df["adr"] >= 0) & (df["adr"] < 5000)]
+
     df_clean = df.drop(columns=config.LEAKAGE_COLS)
 
     X = df_clean.drop(columns=config.TARGET_COL)
