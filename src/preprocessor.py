@@ -40,9 +40,9 @@ def clean_features(df):
 
 def get_preprocessor():
     """ Construye el ColumnTransformer de scikit-learn con StandardScaler y OneHotEncoder."""
-    # Variables numéricas: las estándar + agent + has_company
-    numeric_features = config.NUMERICAL_COLS + ["agent", "has_company"]
-    categorical_features = config.CATEGORICAL_COLS
+    # Variables numéricas: las estándar + has_company
+    numeric_features = config.NUMERICAL_COLS + ["has_company"]
+    categorical_features = config.CATEGORICAL_COLS + ["agent"]
 
     preprocessor = ColumnTransformer(
         transformers=[
