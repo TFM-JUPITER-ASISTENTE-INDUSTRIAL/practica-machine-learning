@@ -25,6 +25,9 @@ def clean_features(df):
     # Eliminamos nulos en agent y los convertimos en 0
     if "agent" in X.columns:
         X["agent"] = X["agent"].fillna(0)
+        X["agent"] = X["agent"].apply(
+            lambda a: str(a) if a in config.TOP_AGENTS or a == 0 else "Other"
+        )
 
     # Eliminamos nulos en children y los convertimos en 0
     if "children" in X.columns:
