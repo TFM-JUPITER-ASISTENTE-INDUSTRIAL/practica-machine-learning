@@ -6,11 +6,12 @@ from tensorflow.keras import layers, models
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 from src import config
-
+from sklearn.model_selection import train_test_split
 
     #####Construye y compila una red neuronal para clasificación binaria.
 def get_model(
     input_dim: int,
+    hidden_units: tuple = (128, 64, 32),
     learning_rate: float = 0.001,
     dropout_rate: float = 0.2,
     random_state: int = config.RANDOM_STATE,
@@ -18,16 +19,40 @@ def get_model(
     # Fijamos la semilla para mejorar la reproducibilidad.
     tf.keras.utils.set_random_seed(random_state)
 
+    model_layers = [
+        layers.Input(shape=(input_dim,), name="input"),
+    ]
+
+    # Construimos las capas ocultas según la configuración recibida.
+    for index, units in enumerate(hidden_units, start=1):
+        model_layers.append(
+            layers.Dense(
+                units,
+                activation="relu",
+                name=f"hidden_{index}",
+            )
+        )
+
+        # Añadimos Dropout entre las capas ocultas.
+        if index < len(hidden_units):
+            model_layers.append(
+                layers.Dropout(
+                    dropout_rate,
+                    name=f"dropout_{index}",
+                )
+            )
+
+    # Salida para clasificación binaria.
+    model_layers.append(
+        layers.Dense(
+            1,
+            activation="sigmoid",
+            name="output",
+        )
+    )
+
     model = models.Sequential(
-        [
-            layers.Input(shape=(input_dim,), name="input"),
-            layers.Dense(128, activation="relu", name="hidden_1"),
-            layers.Dropout(dropout_rate, name="dropout_1"),
-            layers.Dense(64, activation="relu", name="hidden_2"),
-            layers.Dropout(dropout_rate, name="dropout_2"),
-            layers.Dense(32, activation="relu", name="hidden_3"),
-            layers.Dense(1, activation="sigmoid", name="output"),
-        ],
+        model_layers,
         name="hotel_cancellation_mlp",
     )
     optimizer = Adam(learning_rate=learning_rate)
@@ -102,6 +127,134 @@ def plot_training_history(history) -> None:
 
 
 
+###Compara configuraciones y devuelve la mejor red neuronal.
+def tune_model(
+    X_train,
+    y_train,
+    max_epochs: int = 100,
+    patience: int = 10,
+    random_state: int = config.RANDOM_STATE,
+):
+
+
+    X_array = np.asarray(X_train, dtype=np.float32)
+    y_array = np.asarray(y_train, dtype=np.float32)
+
+    # Separamos una validación interna sin utilizar el test.
+    X_tune_train, X_validation, y_tune_train, y_validation = (
+        train_test_split(
+            X_array,
+            y_array,
+            test_size=0.2,
+            random_state=random_state,
+            stratify=y_array,
+        )
+    )
+
+    # Configuraciones basadas en los ejercicios de la sesión 4.
+    configurations = [
+        {
+            "hidden_units": (64, 32),
+            "dropout_rate": 0.2,
+            "learning_rate": 0.001,
+            "batch_size": 256,
+        },
+        {
+            "hidden_units": (128, 64, 32),
+            "dropout_rate": 0.2,
+            "learning_rate": 0.001,
+            "batch_size": 256,
+        },
+        {
+            "hidden_units": (128, 64, 32),
+            "dropout_rate": 0.3,
+            "learning_rate": 0.0005,
+            "batch_size": 256,
+        },
+    ]
+
+    best_score = -np.inf
+    best_params = None
+    best_epoch = None
+
+    for experiment, params in enumerate(configurations, start=1):
+        print(
+            f"\nExperimento {experiment}/"
+            f"{len(configurations)}"
+        )
+        print(f"Parámetros: {params}")
+
+        model = get_model(
+            input_dim=X_array.shape[1],
+            hidden_units=params["hidden_units"],
+            dropout_rate=params["dropout_rate"],
+            learning_rate=params["learning_rate"],
+            random_state=random_state,
+        )
+
+        early_stopping = EarlyStopping(
+            monitor="val_auc",
+            mode="max",
+            patience=patience,
+            restore_best_weights=True,
+            verbose=1,
+        )
+
+        history = model.fit(
+            X_tune_train,
+            y_tune_train,
+            validation_data=(X_validation, y_validation),
+            epochs=max_epochs,
+            batch_size=params["batch_size"],
+            callbacks=[early_stopping],
+            verbose=1,
+            shuffle=True,
+        )
+
+        validation_auc = max(history.history["val_auc"])
+
+        selected_epoch = int(
+            np.argmax(history.history["val_auc"]) + 1
+        )
+
+        print(f"Mejor val_auc: {validation_auc:.4f}")
+        print(f"Mejor época: {selected_epoch}")
+
+        if validation_auc > best_score:
+            best_score = validation_auc
+            best_params = params.copy()
+            best_epoch = selected_epoch
+
+    print("\nTuning de la red neuronal completado")
+    print(f"Mejor ROC-AUC de validación: {best_score:.4f}")
+    print(f"Mejores parámetros: {best_params}")
+    print(f"Mejor número de épocas: {best_epoch}")
+
+    # Reconstruimos y entrenamos el modelo ganador
+    # utilizando todo el conjunto de entrenamiento.
+    best_model = get_model(
+        input_dim=X_array.shape[1],
+        hidden_units=best_params["hidden_units"],
+        dropout_rate=best_params["dropout_rate"],
+        learning_rate=best_params["learning_rate"],
+        random_state=random_state,
+    )
+
+    best_model.fit(
+        X_array,
+        y_array,
+        epochs=best_epoch,
+        batch_size=best_params["batch_size"],
+        verbose=1,
+        shuffle=True,
+    )
+
+    # train.py utilizará esta marca para no entrenarlo otra vez.
+    best_model._already_trained = True
+
+    best_params["epochs"] = best_epoch
+
+    return best_model, best_params
 
 if __name__ == "__main__":
     from src.data_loader import get_train_test_data
@@ -199,3 +352,44 @@ if __name__ == "__main__":
 
     print(f"Modelo guardado en: {model_path}")
     print("\nEvaluación finalizada.")
+
+    # 9. Optimización y evaluación de la red optimizada.
+    print("\n9. Optimizando red neuronal...")
+
+    best_model, best_params = tune_model(
+        X_train_prep,
+        y_train_array,
+    )
+
+    # tune_model ya devuelve la red entrenada.
+    y_proba_tuned = best_model.predict(
+        X_test_prep,
+        batch_size=best_params["batch_size"],
+        verbose=0,
+    ).ravel()
+
+    y_pred_tuned = (y_proba_tuned >= 0.5).astype(int)
+
+    metrics_tuned = compute_metrics(
+        y_test_array,
+        y_pred_tuned,
+        y_proba_tuned,
+    )
+
+    print("\nComparación en test: baseline / optimizado")
+    for metric_name, baseline_value in metrics.items():
+        print(
+            f"{metric_name}: {baseline_value:.4f}"
+            f" / {metrics_tuned[metric_name]:.4f}"
+        )
+
+    plot_confusion_matrix(
+        y_test_array,
+        y_pred_tuned,
+        model_name="Neural Network Tuned",
+    )
+    plot_roc_curve(
+        y_test_array,
+        y_proba_tuned,
+        model_name="Neural Network Tuned",
+    )
