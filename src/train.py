@@ -14,7 +14,7 @@ import argparse
 import joblib
 import pandas as pd
 from pathlib import Path
-
+import numpy as np
 from src import config
 from src.data_loader import get_train_test_data
 from src.preprocessor import preprocess_data
@@ -92,7 +92,7 @@ def load_available_models(tune: bool = False, X_train = None, y_train = None):
             best_model, _ = neural_network.tune_model(X_train, y_train)
             models["Red Neuronal (Tuned)"] = best_model
         else:
-            models["Red Neuronal"] = neural_network.X_train_prep.shape[1]
+            models["Red Neuronal"] = neural_network.get_model(input_dim=X_train.shape[1])
     except (ModuleNotFoundError, ImportError):
         pass
     except Exception as e:
@@ -136,16 +136,54 @@ def run_pipeline(tune: bool = False):
     for name, model in models.items():
         print(f"\n---- Entrenando: {name}")
 
-        # Si no viene entrenado del tuning
-        if not hasattr(model, "n_features_in_") and not hasattr(model, "history"):
-            model.fit(X_train_prep, y_train)
+        if name.startswith("Red Neuronal"):
+            # El modelo procedente de tune_model ya está entrenado.
+            if not getattr(model, "_already_trained", False):
+                from src.models.neural_network import (
+                    get_callbacks,
+                    plot_training_history,
+                )
+                X_train_nn = np.asarray(
+                    X_train_prep,
+                    dtype=np.float32,
+                )
+                y_train_nn = np.asarray(
+                    y_train,
+                    dtype=np.float32,
+                )
+                history = model.fit(
+                    X_train_nn,
+                    y_train_nn,
+                    validation_split=0.2,
+                    epochs=100,
+                    batch_size=256,
+                    callbacks=get_callbacks(patience=10),
+                    verbose=1,
+                    shuffle=True,
+                )
+                plot_training_history(history)
 
-        if hasattr(model, "predict_proba"):
-            y_proba = model.predict_proba(X_test_prep)[:, 1]
-            y_pred = model.predict(X_test_prep)
-        else:
-            y_proba = model.predict(X_test_prep).flatten()
+            X_test_nn = np.asarray(
+                X_test_prep,
+                dtype=np.float32,
+            )
+            y_proba = model.predict(
+                X_test_nn,
+                batch_size=256,
+                verbose=0,
+            ).ravel()
             y_pred = (y_proba >= 0.5).astype(int)
+        else:
+            # Los modelos obtenidos mediante tuning ya están entrenados.
+            if not hasattr(model, "n_features_in_"):
+                model.fit(X_train_prep, y_train)
+
+            if hasattr(model, "predict_proba"):
+                y_proba = model.predict_proba(X_test_prep)[:, 1]
+                y_pred = model.predict(X_test_prep)
+            else:
+                y_proba = model.predict(X_test_prep).ravel()
+                y_pred = (y_proba >= 0.5).astype(int)
 
         # Calculo de métricas
         metrics = compute_metrics(y_test, y_pred, y_proba)
@@ -201,4 +239,4 @@ if __name__ == "__main__":
     parser.add_argument("--tune", action="store_true")
     args = parser.parse_args()
 
-    run_pipeline(tune=args.tune)
+    run_pipeline(tune=True)

@@ -1,6 +1,6 @@
 from sklearn.ensemble import RandomForestClassifier
 from src import config
-
+from sklearn.model_selection import RandomizedSearchCV
 
 
 def get_model(
@@ -21,6 +21,48 @@ def get_model(
     params.update(kwargs)
 
     return RandomForestClassifier(**params)
+
+#Optimiza Random Forest utilizando RandomizedSearchCV.
+def tune_model(
+    X_train,
+    y_train,
+    n_iter: int = 10,
+    cv: int = 3,
+    random_state: int = config.RANDOM_STATE,
+):
+    param_distributions = {
+        "n_estimators": [100, 150, 200, 300],
+        "max_depth": [5, 10, 15, 20, None],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "max_features": ["sqrt", "log2"],
+        "class_weight": [None, "balanced"],
+    }
+
+# RandomizedSearchCV paraleliza las combinaciones.
+    base_model = get_model(n_jobs=1)
+    search = RandomizedSearchCV(
+        estimator=base_model,
+        param_distributions=param_distributions,
+        n_iter=n_iter,
+        scoring="roc_auc",
+        cv=cv,
+        random_state=random_state,
+        n_jobs=-1,
+        verbose=2,
+        refit=True,
+    )
+    print(
+        f"Iniciando tuning de Random Forest: "
+        f"{n_iter} combinaciones, cv={cv}"
+    )
+    search.fit(X_train, y_train)
+    print("\nTuning de Random Forest completado")
+    print(f"Mejor ROC-AUC de validación: {search.best_score_:.4f}")
+    print(f"Mejores hiperparámetros: {search.best_params_}")
+
+
+    return search.best_estimator_, search.best_params_
 
 
 
@@ -92,3 +134,45 @@ if __name__ == "__main__":
         model_name="Random Forest Baseline",
     )
     print("\nEvaluación finalizada.")
+
+    # 7. Optimización y evaluación del modelo optimizado.
+    print("\n7. Optimizando Random Forest...")
+
+    best_model, best_params = tune_model(
+        X_train_prep,
+        y_train,
+    )
+
+    # tune_model ya devuelve el modelo entrenado.
+    y_pred_tuned = best_model.predict(X_test_prep)
+    y_proba_tuned = best_model.predict_proba(X_test_prep)[:, 1]
+
+    metrics_tuned = compute_metrics(
+        y_test,
+        y_pred_tuned,
+        y_proba_tuned,
+    )
+
+    print("\nComparación en test: baseline / optimizado")
+    for metric_name, baseline_value in metrics.items():
+        print(
+            f"{metric_name}: {baseline_value:.4f}"
+            f" / {metrics_tuned[metric_name]:.4f}"
+        )
+
+    plot_confusion_matrix(
+        y_test,
+        y_pred_tuned,
+        model_name="Random Forest Tuned",
+    )
+    plot_roc_curve(
+        y_test,
+        y_proba_tuned,
+        model_name="Random Forest Tuned",
+    )
+    plot_feature_importance(
+        best_model,
+        feature_names,
+        top_n=15,
+        model_name="Random Forest Tuned",
+    )
