@@ -92,7 +92,7 @@ def load_available_models(tune: bool = False, X_train = None, y_train = None):
             best_model, _ = neural_network.tune_model(X_train, y_train)
             models["Red Neuronal (Tuned)"] = best_model
         else:
-            models["Red Neuronal"] = neural_network.get_model()
+            models["Red Neuronal"] = neural_network.X_train_prep.shape[1]
     except (ModuleNotFoundError, ImportError):
         pass
     except Exception as e:
