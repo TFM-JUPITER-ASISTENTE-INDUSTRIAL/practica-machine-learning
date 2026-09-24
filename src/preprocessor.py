@@ -25,6 +25,9 @@ def clean_features(df):
     # Eliminamos nulos en agent y los convertimos en 0
     if "agent" in X.columns:
         X["agent"] = X["agent"].fillna(0)
+        X["agent"] = X["agent"].apply(
+            lambda a: str(a) if a in config.TOP_AGENTS or a == 0 else "Other"
+        )
 
     # Eliminamos nulos en children y los convertimos en 0
     if "children" in X.columns:
@@ -40,9 +43,9 @@ def clean_features(df):
 
 def get_preprocessor():
     """ Construye el ColumnTransformer de scikit-learn con StandardScaler y OneHotEncoder."""
-    # Variables numéricas: las estándar + agent + has_company
-    numeric_features = config.NUMERICAL_COLS + ["agent", "has_company"]
-    categorical_features = config.CATEGORICAL_COLS
+    # Variables numéricas: las estándar + has_company
+    numeric_features = config.NUMERICAL_COLS + ["has_company"]
+    categorical_features = config.CATEGORICAL_COLS + ["agent"]
 
     preprocessor = ColumnTransformer(
         transformers=[
