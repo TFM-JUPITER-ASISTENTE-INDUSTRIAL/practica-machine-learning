@@ -51,7 +51,8 @@ def tune_model(X_train, y_train):
         modelo_rl,
         dict_parametros,
         cv=5,
-        scoring="accuracy"
+        scoring="roc_auc",
+        n_jobs=-1
     )
 
     modelo_rl_cv.fit(X_train, y_train)
@@ -59,7 +60,7 @@ def tune_model(X_train, y_train):
     print(f"Mejores hiperparámetros: {modelo_rl_cv.best_params_}")
     print(f"Mejor score: {modelo_rl_cv.best_score_:.2%}")
 
-    return modelo_rl_cv.best_estimator_
+    return modelo_rl_cv.best_estimator_, modelo_rl_cv.best_params_
 
 
 if __name__ == "__main__":

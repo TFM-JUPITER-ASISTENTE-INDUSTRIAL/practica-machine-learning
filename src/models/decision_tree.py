@@ -48,7 +48,8 @@ def tune_model(X_train, y_train):
         modelo_dt,
         dict_parametros,
         cv=5,
-        scoring="accuracy"
+        scoring="roc_auc",
+        n_jobs=-1
     )
 
     modelo_dt_cv.fit(X_train, y_train)
@@ -56,7 +57,7 @@ def tune_model(X_train, y_train):
     print(f"Mejores hiperparámetros: {modelo_dt_cv.best_params_}")
     print(f"Mejor score: {modelo_dt_cv.best_score_:.2%}")
 
-    return modelo_dt_cv.best_estimator_
+    return modelo_dt_cv.best_estimator_, modelo_dt_cv.best_params_
 
 
 if __name__ == "__main__":
