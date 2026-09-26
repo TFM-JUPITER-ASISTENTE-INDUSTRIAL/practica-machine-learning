@@ -44,13 +44,13 @@ def load_available_models(tune: bool = False, X_train = None, y_train = None):
 
     # 2. Regresión logística
     try:
-        from src.models import logistic_regression
-        if tune and hasattr(logistic_regression, "tune_model") and X_train is not None:
+        from src.models import logistic_regresion
+        if tune and hasattr(logistic_regresion, "tune_model") and X_train is not None:
             print("\n[INFO] Optimizando Regresión Logística...")
-            best_model, _ = logistic_regression.tune_model(X_train, y_train)
+            best_model, _ = logistic_regresion.tune_model(X_train, y_train)
             models["Logistic Regression (Tuned)"] = best_model
         else:
-            models["Logistic Regression"] = logistic_regression.get_model()
+            models["Logistic Regression"] = logistic_regresion.get_model()
     except (ModuleNotFoundError, ImportError):
         pass
     except Exception as e:
