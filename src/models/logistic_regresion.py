@@ -40,7 +40,8 @@ def tune_model(X_train, y_train):
     dict_parametros = {
         "C": [0.01, 0.1, 1],
         "max_iter": [100, 200],
-        "solver": ["liblinear"]
+        "solver": ["liblinear"],
+        "class_weight": [None, "balanced"],
     }
 
     modelo_rl = LogisticRegression(

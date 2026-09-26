@@ -24,6 +24,7 @@ def tune_model(X_train, y_train, n_iter: int = 8, cv: int = 3, random_state: int
         "max_depth": [4, 6, 8],
         "subsample": [0.8, 1],
         "colsample_bytree": [0.8, 1],
+        "scale_pos_weight": [1, 1.7],
     }
 
     base_model = get_model(random_state=random_state)

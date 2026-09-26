@@ -21,6 +21,8 @@ def clean_features(df):
     if "company" in X.columns:
         X["has_company"] = X["company"].notnull().astype(int)
         X = X.drop(columns=["company"])
+    elif "has_company" not in X.columns:
+        X["has_company"] = 0
 
     # Eliminamos nulos en agent y los convertimos en 0
     if "agent" in X.columns:

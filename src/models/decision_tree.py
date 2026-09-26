@@ -37,7 +37,8 @@ def tune_model(X_train, y_train):
         "max_depth": [2, 3, 5, 10, 20, None],
         "criterion": ["gini", "entropy"],
         "min_samples_split": [2, 5, 10, 20],
-        "min_samples_leaf": [1, 2, 4]
+        "min_samples_leaf": [1, 2, 4],
+        "class_weight": [None, "balanced"],
     }
 
     modelo_dt = DecisionTreeClassifier(
