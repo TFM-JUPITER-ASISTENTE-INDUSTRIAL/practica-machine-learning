@@ -221,3 +221,4 @@ mlruns/
 .trash/
 mlflow.db
 *.db
+models/*.joblib
