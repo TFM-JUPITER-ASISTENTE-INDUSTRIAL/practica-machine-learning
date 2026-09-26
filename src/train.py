@@ -13,7 +13,6 @@ Script principal de Entrenamiento y Orquestación
 import argparse
 import joblib
 import pandas as pd
-from pathlib import Path
 import numpy as np
 from src import config
 from src.data_loader import get_train_test_data
@@ -24,6 +23,7 @@ from src.evaluate import (
     plot_roc_curve,
     plot_feature_importance, plot_multi_roc_curve
 )
+import mlflow
 
 def load_available_models(tune: bool = False, X_train = None, y_train = None):
     models = {}
@@ -103,6 +103,8 @@ def load_available_models(tune: bool = False, X_train = None, y_train = None):
 def run_pipeline(tune: bool = False):
     """ Flujo de entramiento, evaluación y selección de modelos."""
     print("INICIANDO PIPELINE")
+    mlflow.set_experiment("Hotel_Cancellations_PontIA")
+
     config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     config.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     figures_dir = config.REPORTS_DIR / "figures"
@@ -195,6 +197,19 @@ def run_pipeline(tune: bool = False):
         print(f"        Accuracy: {metrics['accuracy']:.4f}")
         print(f"        F1-Score: {metrics['f1_score']:.4f}")
         print(f"        ROC-AUC: {metrics['roc_auc']:.4f}")
+        # Registro en MLFlow
+        with mlflow.start_run(run_name=name):
+            # Guardamos métrica numéricas.
+            numeric_metric = {k: v for k,v in metrics.items() if isinstance(v, (int, float))}
+            mlflow.log_metrics(numeric_metric)
+
+            if hasattr(model, "get_params"):
+                # Para Scikit-Learn y XGBoos, filtramos paŕametros legible
+                params = {k: v for k, v in model.get_params().items() if isinstance(v, (int, float, str, bool))}
+                mlflow.log_params(params)
+
+
+
 
     # 5. Tabla comparativa y selección del mejor modelo
     print("\n5. Generando comparativa y seleccionando mejor...")
@@ -231,6 +246,27 @@ def run_pipeline(tune: bool = False):
         feature_names = preprocessor.get_feature_names_out()
         plot_feature_importance(best_model, feature_names, top_n=15, model_name=best_name)
 
+    # 7. Registro del Ganador y Artefactos en MLFlow
+    print("\n7. Registrando resumen y artefactos globales en MLflow...")
+    with mlflow.start_run(run_name="🏆 Modelo Ganador y Comparativa"):
+        # Registramos las métricas clave del ganador
+        mlflow.log_param("modelo_ganador", best_name)
+        mlflow.log_metric("mejor_roc_auc", best_auc)
+
+        # 1. Registramos la Curva ROC Comparativa de todos los modelos
+        comp_roc_path = config.REPORTS_DIR / "figures/roc_curve_comparison.png"
+        if comp_roc_path.exists():
+            mlflow.log_artifact(str(comp_roc_path))
+
+        # 2. Registramos la tabla comparativa CSV
+        if summary_path.exists():
+            mlflow.log_artifact(str(summary_path))
+
+        # 3. Registramos los artefactos de producción (preprocesador y mejor modelo)
+        if best_model_path.exists():
+            mlflow.log_artifact(str(best_model_path))
+        if prep_path.exists():
+            mlflow.log_artifact(str(prep_path))
 
     print("\n Pipeline completado.")
 
