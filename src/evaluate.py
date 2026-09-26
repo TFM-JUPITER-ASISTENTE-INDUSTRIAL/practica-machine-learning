@@ -133,6 +133,38 @@ def plot_feature_importance(model, feature_names, top_n: int = 15, model_name:st
     print(f"Feature importance guardada en: {save_path}")
     plt.close()
 
+def plot_multi_roc_curve(y_true, models_proba: dict, save_path=None):
+    """
+    Genera y guarda gráfica comparativa de Curvas ROC
+    """
+    plt.figure(figsize=(9,7))
+
+    for model_name, y_proba in models_proba.items():
+        if y_proba is not None:
+            fpr, tpr, _ = roc_curve(y_true, y_proba)
+            auc_val = roc_auc_score(y_true, y_proba)
+            plt.plot(fpr, tpr, lw=2, label=f"{model_name} (AUC = {auc_val:.4f})")
+
+    plt.plot([0,1],[0,1], color="navy", lw=1.5, linestyle="--", label="Azar (AUC = 0.50)")
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("Tasa de Falsos Positivos (FPR - Falsas Alarmas)", fontsize=11)
+    plt.ylabel("Tasa de Verdaderos Positivos (TPR- Recall / Aciertos)", fontsize=11)
+    plt.title("Comparativa de Curvas ROC entre Modelos", fontsize=13, pad=12)
+    plt.legend(loc="lower right", fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    if save_path is None:
+        save_path = FIGURES_DIR / "roc_curve_comparison.png"
+
+    plt.savefig(save_path, dpi=150)
+    print(f"Curva ROC comparativa guardada en: {save_path}")
+    plt.close()
+
+
+
 if __name__ == "__main__":
     from src.data_loader import get_train_test_data
     from src.preprocessor import preprocess_data

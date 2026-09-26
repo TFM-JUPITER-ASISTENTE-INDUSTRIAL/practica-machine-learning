@@ -22,7 +22,7 @@ from src.evaluate import (
     compute_metrics,
     plot_confusion_matrix,
     plot_roc_curve,
-    plot_feature_importance
+    plot_feature_importance, plot_multi_roc_curve
 )
 
 def load_available_models(tune: bool = False, X_train = None, y_train = None):
@@ -216,7 +216,7 @@ def run_pipeline(tune: bool = False):
     best_model_path = config.MODELS_DIR / "best_model.joblib"
     joblib.dump(best_model, best_model_path)
 
-    print(f"---- Modelo ganador en: {best_model_path}")
+    print(f"---- Modelo ganador: {best_name} (ROC-AUC: {best_auc}) guardado en: {best_model_path}")
 
     # 6. Graficas del modelo ganador
     print("\n6. Generando gráficos de evaluación...")
@@ -225,11 +225,12 @@ def run_pipeline(tune: bool = False):
 
     plot_confusion_matrix(y_test, best_pred, model_name=best_name)
     plot_roc_curve(y_test, best_proba, model_name=best_name)
-
+    plot_multi_roc_curve(y_test, test_probas)
     # Si es modelo basado en arboles
     if hasattr(best_model, "feature_importances_"):
         feature_names = preprocessor.get_feature_names_out()
         plot_feature_importance(best_model, feature_names, top_n=15, model_name=best_name)
+
 
     print("\n Pipeline completado.")
 
