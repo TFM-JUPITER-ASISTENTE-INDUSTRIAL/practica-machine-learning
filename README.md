@@ -172,12 +172,49 @@ El modelo no devuelve un frío `0` o `1`, sino que traduce la probabilidad matem
 | 🟡 **MEDIO** | $40\% - 69\%$ | Incertidumbre moderada. Probabilidad por encima de la media histórica. | **Acción preventiva suave**: Envío de email de cortesía 48h antes reconfirmando hora estimada de llegada. |
 | 🔴 **ALTO** | $\ge 70\%$ | Alta probabilidad de habitación vacía. Típico en reservas *Non Refund* de OTAs con alta antelación. | **Protección de ingresos**: Activar overbooking preventivo y solicitar preautorización/tarjeta de crédito de garantía. |
 
-### 4. Lanzar la Aplicación Web Interactiva (Streamlit)
-Para operar el sistema mediante una interfaz gráfica moderna (Front-Desk, Auditoría Batch de CSVs y Benchmark de Modelos):
+---
+
+## 🖥️ Aplicación Web Interactiva (`app.py`)
+
+Para acercar el modelo a los usuarios finales (recepcionistas y analistas de *Revenue Management*), el proyecto incluye una aplicación web completa desarrollada con **Streamlit** ([`app.py`](app.py)), desacoplada del pipeline de entrenamiento y conectada directamente con el motor de inferencia.
+
+### 1. Cómo Ejecutar la Aplicación
+Con el entorno virtual activado, ejecuta en la terminal:
 ```bash
 streamlit run app.py
 ```
 Acceso en el navegador: 👉 **[http://localhost:8501](http://localhost:8501)**
+
+### 2. Estructura y Módulos de la Aplicación
+
+La interfaz está dividida en **3 pestañas de negocio** y una **barra lateral informativa**:
+
+#### 🛎️ Pestaña 1: Predicción Individual (Front-Desk)
+- **Formulario temático en 3 columnas**: Organizado de forma natural para el flujo de trabajo en recepción (*Hotel y Calendario*, *Huéspedes y Servicios*, *Garantía y Canal*).
+- **Semáforo de Riesgo en Tiempo Real**: Devuelve de forma instantánea la probabilidad estimada y categoriza el riesgo con alertas visuales de color (🟢 **Bajo**, 🟡 **Medio**, 🔴 **Alto**).
+- **Prescripción Operativa**: Traduce la predicción matemática en acciones prácticas concretas (solicitar tarjeta de garantía, enviar recordatorio o mantener habitación sin molestar al huésped).
+
+#### 📁 Pestaña 2: Auditoría por Lotes (Revenue Management)
+- **Carga de Archivos CSV (`st.file_uploader`)**: Permite arrastrar un archivo con cientos de reservas futuras para auditoría masiva.
+- **Botón de Prueba Rápida en 1 Clic**: Incluye un dataset de muestra preconfigurado (`data/sample_batch.csv` con 30 reservas) para realizar demostraciones en vivo sin necesidad de archivos externos.
+- **Resumen Ejecutivo con KPIs**: Tarjetas métricas automáticas (*Total Reservas*, *Tasa de Cancelación Prevista*, *Volumen en Riesgo Alto y Bajo*).
+- **Gráfico de Distribución**: Visualización rápida de barras con el balance de riesgo del lote.
+- **Exportación de Informes (`st.download_button`)**: Permite descargar un CSV enriquecido con la probabilidad, el nivel de riesgo y la recomendación asignada a cada reserva.
+
+#### 📊 Pestaña 3: Benchmark y Evaluación Técnica
+- **Tabla Resumen Dinámica**: Muestra las métricas de test de los 5 modelos con resaltado automático del mejor valor (diseñado con alto contraste compatible tanto en *Dark Mode* como en *Light Mode*).
+- **Curva ROC Multi-Modelo**: Gráfica comparativa superpuesta generada por el orquestador.
+- **Detalles Colapsables (`st.expander`)**: Permite al evaluador inspeccionar la *Feature Importance* (variables más determinantes) y la *Matriz de Confusión* del modelo ganador.
+
+#### 📌 Barra Lateral (Sidebar)
+- **Identidad del Proyecto**: Autores (Daniel Aguilera, Luis Torres, Nitin Babani) y tutor (Sergio Benito).
+- **Ficha Técnica en Vivo**: Muestra el nombre y métricas del modelo ganador actualmente en producción.
+- **Acceso Directo a MLOps**: Botón de enlace nativo (`st.link_button`) para abrir el panel de **MLflow** en una nueva pestaña (`http://localhost:5000`).
+- **Chuleta Operativa**: Resumen rápido de los umbrales de decisión del hotel.
+
+### 3. Decisiones de Arquitectura y Rendimiento (MLOps)
+- **Caché en Memoria RAM (`@st.cache_resource`)**: Dado que el modelo Random Forest serializado pesa más de 400 MB, la aplicación utiliza `@st.cache_resource` para cargarlo en memoria una única vez al arrancar, evitando lecturas reiteradas de disco y garantizando respuestas en milisegundos en cada interacción.
+- **Cero Valores a Fuego (*Zero-Hardcoding*)**: El dashboard lee dinámicamente `reports/metrics_summary.csv` (`@st.cache_data`) para detectar de forma automática qué algoritmo ganó el benchmark y reflejar sus métricas reales en el sidebar y en las pestañas, desacoplando completamente la interfaz de cualquier modelo concreto.
 
 ---
 
