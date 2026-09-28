@@ -93,7 +93,7 @@ Evaluación de los 5 algoritmos sobre el conjunto de prueba independiente (**Tes
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | 🥇 **Random Forest (Tuned)** | **0.9609** | **0.8534** | **89.53%** | **88.66%** | 82.26% |
 | 🥈 **XGBoost (Tuned)** | 0.9582 | 0.8500 | 88.42% | 81.67% | **88.62%** |
-| 🥉 **Red Neuronal (Tuned)** | 0.9541 | 0.8356 | 88.06% | 85.29% | 81.91% |
+| 🥉 **Red Neuronal (Tuned)** | 0.9537 | 0.8331 | 87.80% | 84.45% | 82.20% |
 | 4️⃣ **Decision Tree (Tuned)** | 0.9289 | 0.7883 | 85.16% | 83.57% | 74.60% |
 | 5️⃣ **Logistic Regression (Tuned)** | 0.9061 | 0.7730 | 82.16% | 73.10% | 82.02% |
 
