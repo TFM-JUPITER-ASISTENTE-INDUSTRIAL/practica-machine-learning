@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     #-------------------------------------------------------------------------------------------------------------------------------------
     # 9. Buscamos el mejor modelo con GridSearchCV
-    modelo_rl_optimizado = tune_model(X_train_prep, y_train)
+    modelo_rl_optimizado, best_params = tune_model(X_train_prep, y_train)
 
     # 10. Realizamos predicciones con el modelo optimizado
     y_pred_optimizado = modelo_rl_optimizado.predict(X_test_prep)

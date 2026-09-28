@@ -128,10 +128,10 @@ if __name__ == "__main__":
     plt.show()
 
     # Optimización con GridSearchCV
-    modelo_dt_optimizado = tune_model(
-        X_train_prep,
-        y_train
-    )
+    modelo_dt_optimizado, best_params = tune_model(
+    X_train_prep,
+    y_train
+)
 
     y_pred_optimizado = modelo_dt_optimizado.predict(X_test_prep)
     y_proba_optimizado = modelo_dt_optimizado.predict_proba(X_test_prep)[:, 1]
