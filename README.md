@@ -11,8 +11,8 @@ Siguiendo las directrices del guión de entrega, a continuación se detallan las
 | Integrante | Rol Principal | Contribuciones Clave |
 | :--- | :--- | :--- |
 | **Daniel Aguilera** | Arquitectura MLOps & Pipeline | Diseño de la arquitectura modular (`data_loader`, `preprocessor`), orquestador principal (`train.py`), módulo de evaluación (`evaluate.py`), modelo de referencia XGBoost con tuning y documentación. |
-| **Luis Torres** | Modelado Machine Learning | Implementación y tuning de modelos basados en árboles y lineales (Árbol de Decisión, Regresión Logística), análisis de métricas e interpretabilidad. |
-| **Nitin Babani** | Deep Learning & Ensambles | Diseño de la Red Neuronal Multicapa profunda (Keras/TensorFlow), regularización (Dropout, EarlyStopping), Random Forest y tratamiento de alta cardinalidad en `agent`. |
+| **Nitin Babani** | Modelado Machine Learning | Implementación y tuning de modelos basados en árboles y lineales (Árbol de Decisión, Regresión Logística), análisis de métricas e interpretabilidad. |
+| **Luis Torres** | Deep Learning & Ensambles | Diseño de la Red Neuronal Multicapa profunda (Keras/TensorFlow), regularización (Dropout, EarlyStopping), Random Forest y tratamiento de alta cardinalidad en `agent`. |
 
 ---
 
